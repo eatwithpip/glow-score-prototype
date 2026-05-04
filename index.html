@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pip's Plates — Prototype v6</title>
+<script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#E8761A;--orange-light:#FFF3E8;--orange-dark:#854F0B;
+  --cream:#F5F0E8;--cream-dark:#EDE5D8;--stone:#D3D1C7;
+  --muted:#888780;--hint:#B4B2A9;--ink:#2C2C2A;
+  --surface:#fff;--border:#E8E0D5;
+  --green-bg:#EAF3DE;--green-text:#27500A;--green-mid:#3B6D11;
+  --amber-bg:#FAEEDA;--amber-text:#633806;--amber-mid:#BA7517;
+  --gray-bg:#F1EFE8;--red-bg:#FCEBEB;--red-text:#791F1F;
+  --teal-bg:#E8F4F8;--teal-text:#1A5C6B;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem 3rem;color:var(--ink)}
+.app-header{text-align:center;margin-bottom:1rem}
+.app-header h1{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink);margin-bottom:4px}
+.app-header p{font-size:13px;color:var(--muted)}
+.phones-wrap{display:flex;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.phone-col{display:flex;flex-direction:column;align-items:center}
+.phone-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.phone{width:290px;background:var(--surface);border-radius:34px;border:1.5px solid var(--stone);overflow:hidden;box-shadow:0 8px 36px rgba(0,0,0,.09)}
+.screen{display:flex;flex-direction:column;height:640px;overflow:hidden}
+.orange-btn{background:var(--orange);border:none;border-radius:12px;padding:11px 16px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;font-family:'DM Sans',sans-serif;transition:opacity .15s}
+.orange-btn:hover{opacity:.9}
+.bottom-nav{display:flex;justify-content:space-around;padding:8px 0 14px;border-top:.5px solid var(--border);flex-shrink:0;background:var(--surface)}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--hint);cursor:pointer;padding:0 8px}
+.nav-item.active{color:var(--orange)}
+.nav-icon{width:20px;height:20px}
+.screen-header{padding:13px 14px 9px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:.5px solid var(--border)}
+.back-btn{font-size:13px;color:var(--orange);cursor:pointer;font-weight:500}
+.screen-title{font-size:15px;font-weight:600;color:var(--ink)}
+.plant-pill{background:var(--green-bg);color:var(--green-text);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600}
+.nova-pill{border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600}
+.nova-1,.nova-2{background:var(--green-bg);color:var(--green-text)}
+.nova-3{background:var(--amber-bg);color:var(--amber-text)}
+.nova-4{background:var(--red-bg);color:var(--red-text)}
+.saved-pill{background:var(--orange-light);color:var(--orange-dark);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600}
+.ferm-pill{background:var(--teal-bg);color:var(--teal-text);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600}
+.scrollable{flex:1;overflow-y:auto}
+.scrollable::-webkit-scrollbar{width:0}
+.toast{margin:5px 14px;background:var(--ink);border-radius:10px;padding:9px 14px;color:#fff;font-size:13px;font-weight:500;text-align:center;opacity:0;transition:opacity .3s;flex-shrink:0;pointer-events:none}
+.toast.show{opacity:1}
+.add-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--orange);color:var(--orange);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;background:var(--surface);transition:all .2s}
+.add-btn.done{background:#4CAF50;border-color:#4CAF50;color:#fff;font-size:14px}
+.del-btn{width:22px;height:22px;border-radius:5px;border:none;background:var(--gray-bg);color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0}
+.del-btn:hover{background:var(--red-bg);color:var(--red-text)}
+.hero-img{width:100%;height:130px;background:var(--cream-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hero-placeholder{display:flex;flex-direction:column;align-items:center;gap:5px}
+.hero-placeholder span{font-size:12px;color:var(--hint)}
+.snap-card{margin:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;flex-shrink:0}
+.snap-title{font-size:14px;font-weight:600;color:var(--ink);text-align:center;margin-bottom:3px}
+.snap-sub{font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;line-height:1.4}
+.snap-btn{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;color:var(--ink);font-family:'DM Sans',sans-serif}
+.premium-pill{background:var(--cream);border:1px solid var(--stone);border-radius:99px;padding:2px 8px;font-size:11px;color:var(--orange-dark);display:flex;align-items:center;gap:4px;font-weight:500}
+.other-ways{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding:10px 14px 6px;flex-shrink:0}
+.toggle-row{display:flex;gap:7px;padding:6px 14px 5px;flex-shrink:0}
+.toggle-btn{flex:1;padding:7px 4px;border-radius:10px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:5px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.toggle-btn.active{background:var(--orange-light);border-color:var(--orange);color:var(--orange-dark);font-weight:600}
+.food-item{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:.5px solid #F1EFE8;cursor:pointer}
+.food-item.highlighted{background:var(--green-bg)}
+.food-thumb{width:36px;height:36px;border-radius:10px;background:var(--cream);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.food-info{flex:1;min-width:0}
+.food-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.food-meta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.meal-tabs{display:flex;gap:5px;padding:6px 0 10px;flex-shrink:0}
+.meal-tab{flex:1;padding:7px 3px;border-radius:8px;font-size:11px;font-weight:500;border:none;background:var(--cream);color:var(--muted);cursor:pointer;text-align:center;font-family:'DM Sans',sans-serif;transition:all .15s}
+.meal-tab.active{background:var(--orange);color:#fff;font-weight:600}
+.glow-preview{background:var(--cream);border-radius:12px;padding:10px 12px;margin:8px 14px 0;display:flex;align-items:center;gap:10px;flex-shrink:0;border:1px solid var(--border)}
+.glow-dot{width:34px;height:34px;border-radius:50%;flex-shrink:0;transition:all .4s;display:flex;align-items:center;justify-content:center;font-size:13px}
+.glow-info{flex:1;min-width:0}
+.glow-score-big{font-size:14px;font-weight:600;color:var(--ink)}
+.glow-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.glow-bar-track{height:4px;background:var(--stone);border-radius:99px;margin-top:5px;overflow:hidden}
+.glow-bar-fill{height:100%;border-radius:99px;transition:width .4s ease,background .4s ease}
+.log-body{flex:1;overflow-y:auto;padding:0 14px 80px}
+.log-body::-webkit-scrollbar{width:0}
+.log-footer{position:absolute;bottom:56px;left:0;right:0;padding:10px 14px;background:var(--surface);border-top:.5px solid var(--border)}
+.log-section{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:11px 0 7px}
+.ing-search-row{display:flex;gap:7px;align-items:center;background:var(--cream);border-radius:10px;padding:7px 11px;margin-bottom:8px;border:1px solid var(--border)}
+.ing-search-row input{flex:1;border:none;background:transparent;font-size:13px;color:var(--ink);outline:none;font-family:'DM Sans',sans-serif}
+.ing-search-row input::placeholder{color:var(--hint)}
+.ingredient-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:.5px solid #F1EFE8;animation:fadeUp .2s ease}
+.ingredient-item:last-child{border-bottom:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.ing-left{display:flex;flex-direction:column;gap:3px}
+.ing-name{font-size:13px;font-weight:500;color:var(--ink)}
+.ing-badges{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.save-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:.5px solid var(--border);gap:12px}
+.save-label{font-size:13px;font-weight:600;color:var(--ink)}
+.save-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.toggle-switch{width:40px;height:22px;background:var(--orange);border-radius:99px;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.toggle-switch::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:2px;right:2px;transition:transform .2s}
+.toggle-switch.off{background:var(--stone)}
+.toggle-switch.off::after{transform:translateX(-18px)}
+.name-input{width:100%;border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--ink);background:var(--surface);outline:none;font-family:'DM Sans',sans-serif;transition:border-color .15s;margin-top:6px}
+.name-input:focus{border-color:var(--orange)}
+.dash-body{flex:1;overflow-y:auto;padding:0 14px 12px}
+.dash-body::-webkit-scrollbar{width:0}
+.dash-greeting{padding:14px 14px 0;flex-shrink:0}
+.dash-date{font-size:11px;color:var(--muted);margin-bottom:2px}
+.dash-name{font-size:20px;font-weight:600;color:var(--ink);font-family:'DM Serif Display',serif}
+.glow-card,.highlight-card,.plants-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px}
+.card-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.glow-main-row{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.glow-ring{width:68px;height:68px;flex-shrink:0;position:relative}
+.glow-ring svg{width:68px;height:68px;transform:rotate(-90deg)}
+.glow-ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.glow-ring-score{font-size:15px;font-weight:600;color:var(--ink);line-height:1}
+.glow-ring-text{font-size:8px;color:var(--muted);text-align:center;line-height:1.2;margin-top:2px}
+.glow-main-info{flex:1}
+.glow-main-title{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.glow-main-sub{font-size:12px;color:var(--muted);line-height:1.4;margin-bottom:7px}
+.trend-chip{display:inline-flex;align-items:center;gap:4px;background:var(--green-bg);color:var(--green-text);border-radius:99px;padding:3px 9px;font-size:11px;font-weight:600}
+.trend-chip.down{background:var(--amber-bg);color:var(--amber-text)}
+.stat-row{display:flex;gap:8px}
+.stat-box{flex:1;background:var(--cream);border-radius:10px;padding:9px 10px}
+.stat-val{font-size:20px;font-weight:600;color:var(--ink)}
+.stat-val-small{font-size:14px;font-weight:600}
+.stat-label{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.3}
+.stat-bar{height:3px;background:var(--stone);border-radius:99px;margin-top:6px;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:99px}
+.highlight-meal{background:var(--green-bg);border-radius:10px;padding:9px 11px;margin-bottom:10px}
+.highlight-meal-label{font-size:10px;font-weight:600;color:var(--green-text);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.highlight-meal-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.highlight-meal-reason{font-size:12px;color:var(--green-mid)}
+.insight-row{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:.5px solid var(--border)}
+.insight-row:last-child{border-bottom:none;padding-bottom:0}
+.insight-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;margin-top:1px}
+.insight-body{flex:1}
+.insight-eyebrow{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px}
+.insight-text{font-size:12px;color:var(--ink);line-height:1.4}
+.plants-main-row{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.plants-ring{width:62px;height:62px;flex-shrink:0;position:relative}
+.plants-ring svg{width:62px;height:62px;transform:rotate(-90deg)}
+.plants-ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.plants-count{font-size:17px;font-weight:600;color:var(--ink);line-height:1}
+.plants-of{font-size:9px;color:var(--muted)}
+.plants-info{flex:1}
+.plants-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.plants-sub{font-size:11px;color:var(--muted);line-height:1.4}
+.plant-chips{display:flex;flex-wrap:wrap;gap:5px}
+.plant-chip{background:var(--green-bg);color:var(--green-text);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:500}
+.more-chip{background:var(--cream);color:var(--muted);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:500}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(44,44,42,.5);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-sheet{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:0 0 2rem;max-height:70vh;display:flex;flex-direction:column}
+.modal-handle{width:36px;height:4px;background:var(--stone);border-radius:99px;margin:12px auto 0;flex-shrink:0}
+.modal-header{padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:.5px solid var(--border)}
+.modal-title{font-size:16px;font-weight:600;color:var(--ink)}
+.modal-close{font-size:13px;color:var(--orange);cursor:pointer;font-weight:500}
+.modal-body{flex:1;overflow-y:auto;padding:8px 18px}
+.modal-body::-webkit-scrollbar{width:0}
+.saved-meal-item{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px 0;border-bottom:.5px solid #F1EFE8}
+.saved-meal-item:last-child{border-bottom:none}
+.saved-meal-thumb{width:40px;height:40px;border-radius:10px;background:var(--orange-light);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.saved-meal-info{flex:1;min-width:0}
+.saved-meal-name{font-size:13px;font-weight:600;color:var(--ink)}
+.saved-meal-meta{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.overlay{display:none;position:fixed;inset:0;background:rgba(44,44,42,.55);z-index:300;align-items:center;justify-content:center;padding:2rem}
+.overlay.show{display:flex}
+.overlay-card{background:var(--surface);border-radius:24px;padding:2rem;max-width:300px;width:100%;text-align:center}
+.overlay-circle{width:64px;height:64px;border-radius:50%;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:26px}
+.overlay-score{font-size:38px;font-weight:600;color:var(--ink);line-height:1;margin-bottom:4px}
+.overlay-label{font-size:14px;font-weight:600;margin-bottom:8px}
+.overlay-msg{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:1.5rem}
+.overlay-close{background:var(--orange);border:none;border-radius:12px;padding:11px 32px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%}
+.footer-note{text-align:center;font-size:12px;color:var(--muted);margin-top:2rem;max-width:700px;line-height:1.8}
+.scanner-modal{display:none;position:fixed;inset:0;background:#000;z-index:400;flex-direction:column;align-items:center;justify-content:center}
+.scanner-modal.show{display:flex}
+.scanner-inner{position:relative;width:100%;max-width:480px}
+#scanner-video{width:100%;display:block}
+.scanner-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.scanner-frame{width:220px;height:140px;border:2.5px solid #E8761A;border-radius:12px;position:relative}
+.scanner-frame::before,.scanner-frame::after{content:'';position:absolute;width:24px;height:24px;border-color:#E8761A;border-style:solid}
+.scanner-frame::before{top:-3px;left:-3px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.scanner-frame::after{bottom:-3px;right:-3px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.scanner-line{position:absolute;left:4px;right:4px;height:2px;background:rgba(232,118,26,.7);animation:scanline 1.8s ease-in-out infinite;top:50%}
+@keyframes scanline{0%,100%{top:15%}50%{top:85%}}
+.scanner-hint{color:#fff;font-size:13px;margin-top:18px;opacity:.8;font-family:'DM Sans',sans-serif}
+.scanner-status{color:#E8761A;font-size:12px;margin-top:8px;font-family:'DM Sans',sans-serif;min-height:18px}
+.scanner-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:36px;height:36px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;pointer-events:all}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <h1>Pip's Plates</h1>
+  <p>Interactive prototype v6 — Log · Add Meal · Today · Dashboard</p>
+</div>
+<div class="phones-wrap">
+
+<!-- SCREEN 1 — LOG -->
+<div class="phone-col">
+  <div class="phone-label">Screen 1 — Log</div>
+  <div class="phone"><div class="screen">
+    <div style="position:relative;flex-shrink:0">
+      <div class="hero-img"><div class="hero-placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B4B2A9" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><path d="M3 9a2 2 0 0 1 2-2h.5l1.5-2h9l1.5 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Photo appears here</span></div></div>
+      <div class="snap-card">
+        <div class="snap-title">Snap your meal instantly</div>
+        <div class="snap-sub">Detect ingredients &amp; nutrition automatically</div>
+        <button class="snap-btn"><div style="display:flex;align-items:center;gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2C2C2A" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><path d="M3 9a2 2 0 0 1 2-2h.5l1.5-2h9l1.5 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Take photo</div><div class="premium-pill"><svg width="9" height="9" viewBox="0 0 24 24" fill="#854F0B"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Premium</div></button>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(44,44,42,0.6);display:flex;align-items:center;justify-content:center;padding:16px">
+        <div style="font-size:12px;font-weight:600;color:#fff;text-align:center;line-height:1.5;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:8px">Photo analysis excluded from testing</div>
+      </div>
+    </div>
+    <div class="other-ways">Other ways to log</div>
+    <div style="padding:0 12px;flex-shrink:0"><button class="orange-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Scan or search foods</button></div>
+    <div class="toggle-row" style="margin-top:8px">
+      <button class="toggle-btn active" id="tog-r" onclick="toggleFeed('recent')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Recent items</button>
+      <button class="toggle-btn" id="tog-s" onclick="showSavedMeals()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Saved meals</button>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding:4px 14px;flex-shrink:0">Recent food</div>
+    <div class="scrollable">
+      <div id="recent-feed"><div style="text-align:center;padding:30px 20px;color:var(--hint);font-size:12px;line-height:1.6">No recent items yet.<br>Log your first meal to see it here.</div></div>
+    </div>
+    <div class="toast" id="toast1">Meal logged ✓</div>
+    <div class="toast" id="toast-sheet-warn" style="background:#8A3200">⚠ Logged locally — sheet sync failed</div>
+
+    <!-- Nickname modal -->
+    <div class="modal-overlay" id="nickname-modal" style="z-index:999">
+      <div class="modal-sheet" style="border-radius:20px 20px 0 0;padding:28px 24px 32px">
+        <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:6px">Welcome to Pip's Plates 👋</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">Enter a nickname so your meals can be identified in the test data. This is just for the test week — it won't be in the final app.</div>
+        <input id="nickname-input" type="text" placeholder="e.g. Jess, Tester 1..."
+          style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface);margin-bottom:14px;outline:none"
+          onkeydown="if(event.key==='Enter')saveNickname()">
+        <button onclick="saveNickname()"
+          style="width:100%;background:var(--orange);border:none;border-radius:12px;padding:13px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
+          Start logging
+        </button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Today</span></div>
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+      <div class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Log</span></div>
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><span>Goals</span></div>
+    </div>
+  </div></div>
+</div>
+
+<!-- SCREEN 2 — ADD MEAL -->
+<div class="phone-col">
+  <div class="phone-label">Screen 2 — Add meal</div>
+  <div class="phone" style="position:relative">
+    <div class="screen">
+      <div class="screen-header"><span class="back-btn">← Log</span><span class="screen-title">Add Meal</span><span style="font-size:13px;color:var(--orange);cursor:pointer;font-weight:500">Done</span></div>
+    
+      <div class="glow-preview">
+        <div class="glow-dot" id="glow-dot" style="background:#F1EFE8;border:2px solid #D3D1C7">○</div>
+        <div class="glow-info"><div class="glow-score-big" id="glow-score-disp">Add ingredients to build your score</div><div class="glow-sub">Score calculates when you log</div><div class="glow-bar-track"><div class="glow-bar-fill" id="glow-bar" style="width:0%;background:#BA7517"></div></div></div>
+      </div>
+      <div class="log-body">
+        <div style="background:var(--cream);border-radius:8px;padding:8px 10px;margin-top:10px;margin-bottom:10px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);line-height:1.6"><span style="font-weight:600;color:var(--ink)">Text search</span> uses built-in mock data &nbsp;·&nbsp; <span style="font-weight:600;color:var(--ink)">Barcode scan</span> uses Open Food Facts API</div>
+        </div>
+        <div class="log-section">Search ingredient</div>
+        <div class="ing-search-row">
+          <input type="text" placeholder="e.g. apple" id="ing-search" onkeydown="handleIngSearchKey(event)" style="font-size:16px"/>
+          <button onclick="runIngSearch()" style="background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+          <button onclick="startScanner()" style="background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5"><rect x="2" y="5" width="3" height="14"/><rect x="7" y="5" width="1.5" height="14"/><rect x="10.5" y="5" width="3" height="14"/><rect x="16" y="5" width="1.5" height="14"/><rect x="19.5" y="5" width="2.5" height="14"/></svg></button>
+        </div>
+        <div id="ing-search-results" style="display:none;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden"></div>
+        <div id="ingredient-list"></div>
+        <div class="log-section" style="margin-top:14px">Meal type</div>
+        <div class="meal-tabs">
+          <button class="meal-tab active" onclick="selectMealTab(this)">Breakfast</button>
+          <button class="meal-tab" onclick="selectMealTab(this)">Lunch</button>
+          <button class="meal-tab" onclick="selectMealTab(this)">Dinner</button>
+          <button class="meal-tab" onclick="selectMealTab(this)">Snack</button>
+        </div>
+        <div class="log-section">Save meal</div>
+        <div class="save-row">
+          <div><div class="save-label">Save meal</div><div class="save-sub">Reuse with one tap later</div></div>
+          <div class="toggle-switch off" id="save-toggle" onclick="toggleSaveMeal()"></div>
+        </div>
+        <div id="meal-name-section" style="display:none">
+          <div class="log-section" style="margin-top:12px" id="meal-name-label">Name your breakfast</div>
+          <input type="text" class="name-input" placeholder="e.g. Greek yogurt and berries" id="meal-name"/>
+        </div>
+        <div style="margin-top:14px;padding-bottom:4px"></div>
+      </div>
+      <div class="log-footer"><button class="orange-btn" onclick="logFood()">Log food</button></div>
+      <div class="bottom-nav">
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Today</span></div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+        <div class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Log</span></div>
+        <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><span>Goals</span></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<!-- SCREEN 3 — TODAY -->
+<div class="phone-col">
+  <div class="phone-label">Screen 3 — Today</div>
+  <div class="phone"><div class="screen">
+    <div class="screen-header" style="flex-direction:column;gap:6px;align-items:stretch;padding:10px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <button onclick="changeDay(-1)" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--orange);font-size:20px;line-height:1">‹</button>
+        <span class="screen-title" id="today-date-label">Today</span>
+        <button onclick="changeDay(1)" id="next-day-btn" style="background:none;border:none;cursor:pointer;padding:4px;font-size:20px;line-height:1;opacity:.3;color:var(--hint)" disabled>›</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 14px 16px">
+      <div id="today-empty" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px"><div style="font-size:32px;margin-bottom:10px">🍽</div><div style="font-weight:600;margin-bottom:4px">Nothing logged yet</div><div style="font-size:12px;line-height:1.5">Add a meal in Screen 2 and it'll appear here</div></div>
+      <div id="today-list" style="display:none"></div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Today</span></div>
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Log</span></div>
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><span>Goals</span></div>
+    </div>
+  </div></div>
+</div>
+
+<!-- SCREEN 4 — DASHBOARD -->
+<div class="phone-col">
+  <div class="phone-label">Screen 4 — Dashboard</div>
+  <div class="phone"><div class="screen">
+    <div class="dash-greeting" style="flex-shrink:0"><div class="dash-date" id="dash-date-label"></div><div class="dash-name">Good morning</div></div>
+    <div class="dash-body">
+      <div class="glow-card" style="margin-top:12px">
+        <div class="card-label">Your 7-day glow</div>
+        <div id="dash-empty" style="text-align:center;padding:20px 0;color:var(--muted);font-size:13px"><div style="font-size:28px;margin-bottom:8px">🌱</div>Log your first meal to see your glow score here</div>
+        <div id="dash-data" style="display:none">
+          <div class="glow-main-row">
+            <div class="glow-ring"><svg viewBox="0 0 68 68"><circle cx="34" cy="34" r="28" fill="none" stroke="#E8E0D5" stroke-width="6"/><circle id="dash-ring-fill" cx="34" cy="34" r="28" fill="none" stroke="#BA7517" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="175.9" stroke-linecap="round"/></svg><div class="glow-ring-label"><div class="glow-ring-score" id="dash-score-num">—</div><div class="glow-ring-text" id="dash-ring-label">Glow</div></div></div>
+            <div class="glow-main-info"><div class="glow-main-title" id="dash-title">—</div><div class="glow-main-sub" id="dash-sub"></div><div class="trend-chip" id="dash-trend" style="display:none"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg><span id="dash-trend-text"></span></div></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-box"><div class="stat-val"><span id="dash-hm-count">0</span><span class="stat-val-small" id="dash-hm-total">/0</span></div><div class="stat-label">meals medium glow or above</div><div class="stat-bar"><div class="stat-bar-fill" id="dash-hm-bar" style="width:0%;background:var(--green-mid)"></div></div></div>
+            <div class="stat-box"><div class="stat-val" id="dash-meal-count" style="color:var(--ink)">0</div><div class="stat-label">meals logged this session</div><div class="stat-bar"><div class="stat-bar-fill" id="dash-meal-bar" style="width:0%;background:var(--orange)"></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="highlight-card" id="dash-highlights" style="display:none">
+        <div class="card-label" style="margin-bottom:10px">Session highlights <span style="font-weight:400;color:var(--hint)">(hardcoded)</span></div>
+        <div class="highlight-meal"><div class="highlight-meal-label">Most glowing meal</div><div class="highlight-meal-name" id="dash-best-name">—</div><div class="highlight-meal-reason" id="dash-best-reason"></div></div>
+        <div class="insight-row" id="dash-insight-nailed" style="display:none"><div class="insight-icon" style="background:var(--green-bg)">🌿</div><div class="insight-body"><div class="insight-eyebrow" style="color:var(--green-mid)">This week you nailed</div><div class="insight-text" id="dash-insight-nailed-text"></div></div></div>
+        <div class="insight-row" id="dash-insight-explore" style="display:none"><div class="insight-icon" style="background:var(--amber-bg)">⏱</div><div class="insight-body"><div class="insight-eyebrow" style="color:var(--amber-mid)">Worth exploring this week</div><div class="insight-text" id="dash-insight-explore-text"></div></div></div>
+      </div>
+      <div class="plants-card" id="dash-plants-card" style="display:none">
+        <div class="card-label" style="margin-bottom:10px">Plants logged this session</div>
+        <div class="plants-main-row">
+          <div class="plants-ring"><svg viewBox="0 0 62 62"><circle cx="31" cy="31" r="25" fill="none" stroke="#E8E0D5" stroke-width="5"/><circle id="dash-plants-ring" cx="31" cy="31" r="25" fill="none" stroke="#3B6D11" stroke-width="5" stroke-dasharray="157.1" stroke-dashoffset="157.1" stroke-linecap="round"/></svg><div class="plants-ring-label"><div class="plants-count" id="dash-plants-count">0</div><div class="plants-of">plants</div></div></div>
+          <div class="plants-info"><div class="plants-title" id="dash-plants-title">Keep going!</div><div class="plants-sub" id="dash-plants-sub">Log meals to track your plant variety.</div></div>
+        </div>
+        <div class="plant-chips" id="dash-plant-chips"></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Today</span></div>
+      <div class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Log</span></div>
+      <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><span>Goals</span></div>
+    </div>
+  </div></div>
+</div>
+
+</div>
+
+<div class="footer-note">
+  <strong>Text search</strong> uses mock data &nbsp;·&nbsp; <strong>Barcode scan</strong> uses Open Food Facts API &nbsp;·&nbsp; <strong>Session</strong> persists on refresh, clears on tab close
+</div>
+
+<!-- SCANNER MODAL -->
+<div class="scanner-modal" id="scanner-modal">
+  <div class="scanner-inner">
+    <video id="scanner-video" playsinline autoplay muted></video>
+    <div class="scanner-overlay"><div class="scanner-frame"><div class="scanner-line"></div></div><div class="scanner-hint">Hold barcode steady inside the frame</div><div class="scanner-status" id="scanner-status">Initialising camera...</div></div>
+    <button class="scanner-close" onclick="stopScanner()">×</button>
+    <div style="position:absolute;bottom:32px;left:0;right:0;padding:0 24px">
+      <div style="display:flex;gap:8px;align-items:center;background:rgba(255,255,255,0.12);border-radius:10px;padding:8px 12px">
+        <input type="text" id="manual-barcode" placeholder="Or type barcode number..." inputmode="numeric" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px;font-family:'DM Sans',sans-serif"/>
+        <button onclick="submitManualBarcode()" style="background:var(--orange);border:none;border-radius:7px;padding:6px 12px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0">Look up</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAVED MEALS MODAL -->
+<div class="modal-overlay" id="saved-modal" onclick="closeSavedModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title">Saved meals</span><span class="modal-close" onclick="closeSavedModal()">Close</span></div>
+    <div class="modal-body" id="saved-modal-body">
+      <div style="text-align:center;padding:24px 20px;color:var(--hint);font-size:12px;line-height:1.6">No saved meals yet.<br>Log a meal with "Save meal" toggled on to see it here.</div>
+    </div>
+  </div>
+</div>
+
+<!-- GLOW RESULT OVERLAY -->
+<div class="overlay" id="result-overlay" onclick="closeOverlay(event)">
+  <div class="overlay-card" onclick="event.stopPropagation()">
+    <div class="overlay-circle" id="ov-circle">🟡</div>
+    <div class="overlay-score" id="ov-score">0.00</div>
+    <div class="overlay-label" id="ov-label">Medium glow</div>
+    <div class="overlay-msg" id="ov-msg"></div>
+    <button class="overlay-close" onclick="closeOverlay()">Back to log</button>
+  </div>
+</div>
+
+<script>
+/* ── SHEET SYNC CONFIG ── */
+// Paste your Apps Script web app URL here after deploying
+var SHEET_URL = '';
+
+/* ── NICKNAME ── */
+var TESTER_NICKNAME = sessionStorage.getItem('pip_nickname') || '';
+
+function saveNickname(){
+  var val = document.getElementById('nickname-input').value.trim();
+  if(!val){ document.getElementById('nickname-input').style.borderColor='#C0392B'; return; }
+  TESTER_NICKNAME = val;
+  sessionStorage.setItem('pip_nickname', val);
+  document.getElementById('nickname-modal').classList.remove('show');
+}
+
+function checkNickname(){
+  if(!TESTER_NICKNAME){
+    document.getElementById('nickname-modal').classList.add('show');
+    setTimeout(function(){ document.getElementById('nickname-input').focus(); }, 300);
+  }
+}
+
+/* ── SHEET SYNC ── */
+function postToSheet(entry){
+  if(!SHEET_URL) return; // not configured yet — silent skip
+  var plants = entry.plants ? entry.plants.join(', ') : '';
+  var ings = entry.ingredients ? entry.ingredients.map(function(i){ return i.name; }).join(', ') : '';
+  var row = {
+    nickname:   TESTER_NICKNAME,
+    loggedAt:   entry.loggedAt ? new Date(entry.loggedAt).toISOString() : new Date().toISOString(),
+    mealName:   entry.name || '',
+    mealType:   entry.mealType || '',
+    glowScore:  entry.score !== null && entry.score !== undefined ? entry.score : '',
+    glowLabel:  entry.score !== null && entry.score !== undefined ? (entry.score>=0.75?'High glow':entry.score>=0.46?'Medium glow':'Neutral glow') : '',
+    plantCount: entry.plants ? entry.plants.length : 0,
+    plants:     plants,
+    worstNova:  entry.worstNova || '',
+    fermented:  entry.hasFermented ? 'Yes' : 'No',
+    userSavedOnLog: entry.userSavedOnLog ? 'Yes' : 'No',
+    loggedFromSaved:entry.loggedFromSaved ? 'Yes' : 'No',
+    ingredients:ings
+  };
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(row)
+  }).catch(function(){
+    showToast('toast-sheet-warn');
+  });
+}
+
+/* ── SESSION STORAGE ── */
+var SESSION_LOG = (function(){
+  try {
+    var raw = JSON.parse(sessionStorage.getItem('pip_session_log') || '[]');
+    raw.forEach(function(m){ if(m.loggedAt) m.loggedAt = new Date(m.loggedAt); });
+    return raw;
+  } catch(e){ return []; }
+})();
+
+// Saved meals live in their own store, completely independent of SESSION_LOG.
+// Deleting a log entry never touches this store.
+var SAVED_MEALS_STORE = (function(){
+  try { return JSON.parse(sessionStorage.getItem('pip_saved_meals') || '[]'); }
+  catch(e){ return []; }
+})();
+
+function saveSession(){
+  try { sessionStorage.setItem('pip_session_log', JSON.stringify(SESSION_LOG)); } catch(e){}
+}
+function saveMealsStore(){
+  try { sessionStorage.setItem('pip_saved_meals', JSON.stringify(SAVED_MEALS_STORE)); } catch(e){}
+}
+
+/* ── MOCK DATA ── */
+var MOCK_DATA = {
+  'banana':       [{name:'Banana',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.6,sugar:12,satFat:0.1,protein:1.1,isWholeGrain:false,colours:1}}],
+  'apple':        [{name:'Apple',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.4,sugar:10,satFat:0,protein:0.3,isWholeGrain:false,colours:1}}],
+  'spinach':      [{name:'Spinach',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.2,sugar:0.4,satFat:0,protein:2.9,isWholeGrain:false,colours:1}}],
+  'broccoli':     [{name:'Broccoli',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.6,sugar:1.7,satFat:0.1,protein:2.8,isWholeGrain:false,colours:1}}],
+  'carrot':       [{name:'Carrot',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.8,sugar:4.7,satFat:0,protein:0.9,isWholeGrain:false,colours:1}}],
+  'tomato':       [{name:'Tomato',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.2,sugar:2.6,satFat:0,protein:0.9,isWholeGrain:false,colours:1}}],
+  'avocado':      [{name:'Avocado',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:6.7,sugar:0.7,satFat:2.1,protein:2,isWholeGrain:false,colours:1}}],
+  'sweet potato': [{name:'Sweet Potato',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:3,sugar:4.2,satFat:0,protein:1.6,isWholeGrain:true,colours:1}}],
+  'kale':         [{name:'Kale',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:3.6,sugar:0.9,satFat:0.1,protein:4.3,isWholeGrain:false,colours:1}}],
+  'cucumber':     [{name:'Cucumber',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0.5,sugar:1.7,satFat:0,protein:0.6,isWholeGrain:false,colours:1}}],
+  'pepper':       [{name:'Red Pepper',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.1,sugar:4.2,satFat:0,protein:1,isWholeGrain:false,colours:1}}],
+  'onion':        [{name:'Onion',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.7,sugar:4.2,satFat:0,protein:1.1,isWholeGrain:false,colours:1}}],
+  'mushroom':     [{name:'Mushrooms',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1,sugar:0.4,satFat:0.1,protein:3.1,isWholeGrain:false,colours:1}}],
+  'berries':      [{name:'Mixed Berries',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:3.5,sugar:5.4,satFat:0,protein:0.9,isWholeGrain:false,colours:1}}],
+  'blueberries':  [{name:'Blueberries',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.4,sugar:9.9,satFat:0,protein:0.7,isWholeGrain:false,colours:1}}],
+  'strawberries': [{name:'Strawberries',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2,sugar:4.9,satFat:0,protein:0.8,isWholeGrain:false,colours:1}}],
+  'lentils':      [{name:'Red Lentils',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:7.9,sugar:0.5,satFat:0.1,protein:9,isWholeGrain:true,colours:1}}],
+  'chickpeas':    [{name:'Chickpeas',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:7.6,sugar:0.6,satFat:0.2,protein:8.9,isWholeGrain:true,colours:1}}],
+  'edamame':      [{name:'Edamame',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:5.2,sugar:1.3,satFat:0.7,protein:11,isWholeGrain:true,colours:1}}],
+  'chicken':      [{name:'Chicken Breast',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0.9,protein:31,isWholeGrain:false,colours:1}},{name:'Roast Chicken',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:3,protein:25,isWholeGrain:false,colours:1}}],
+  'salmon':       [{name:'Salmon Fillet',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:3.4,protein:25,isWholeGrain:false,colours:1}}],
+  'egg':          [{name:'Egg',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0.2,satFat:3.3,protein:13,isWholeGrain:false,colours:1}},{name:'Scrambled Eggs',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0.3,satFat:5,protein:10,isWholeGrain:false,colours:1}}],
+  'eggs':         [{name:'Eggs',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0.2,satFat:3.3,protein:13,isWholeGrain:false,colours:1}}],
+  'tuna':         [{name:'Tuna (tinned)',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0.5,protein:26,isWholeGrain:false,colours:1}}],
+  'tofu':         [{name:'Tofu',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0.3,sugar:0.3,satFat:0.8,protein:8,isWholeGrain:false,colours:1}}],
+  'beef':         [{name:'Beef Mince',brand:'',nova:1,nutri:'C',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:7,protein:21,isWholeGrain:false,colours:1}}],
+  'rice':         [{name:'Brown Rice',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:1.8,sugar:0.4,satFat:0.3,protein:2.6,isWholeGrain:true,colours:1}},{name:'White Rice',brand:'',nova:1,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:0.4,sugar:0,satFat:0.1,protein:2.7,isWholeGrain:false,colours:1}}],
+  'pasta':        [{name:'Wholewheat Pasta',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:7,sugar:0.8,satFat:0.3,protein:5.4,isWholeGrain:true,colours:1}},{name:'White Pasta',brand:'',nova:1,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:1.8,sugar:0.5,satFat:0.2,protein:5,isWholeGrain:false,colours:1}}],
+  'oats':         [{name:'Porridge Oats',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:8,sugar:1,satFat:1.3,protein:11,isWholeGrain:true,colours:1}}],
+  'bread':        [{name:'Sourdough Bread',brand:'',nova:2,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:2.4,sugar:1,satFat:0.4,protein:7,isWholeGrain:false,colours:1}},{name:'Wholemeal Bread',brand:'',nova:3,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:5.6,sugar:2.5,satFat:0.6,protein:9,isWholeGrain:true,colours:1}}],
+  'quinoa':       [{name:'Quinoa',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.8,sugar:0.9,satFat:0.7,protein:4.4,isWholeGrain:true,colours:1}}],
+  'greek yogurt': [{name:'Total Greek Yogurt 0%',brand:'Fage',nova:1,nutri:'A',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:4,satFat:0.1,protein:10.3,isWholeGrain:false,colours:1}},{name:'Greek Style Natural Yogurt',brand:'Yeo Valley',nova:1,nutri:'A',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:5.2,satFat:2.8,protein:6.4,isWholeGrain:false,colours:1}},{name:'Activia Greek Style Yogurt',brand:'Danone',nova:3,nutri:'B',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:9,satFat:1.5,protein:4.5,isWholeGrain:false,colours:1}}],
+  'yogurt':       [{name:'Natural Yogurt',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:5,satFat:1.7,protein:5.7,isWholeGrain:false,colours:1}}],
+  'yoghurt':      [{name:'Natural Yoghurt',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:5,satFat:1.7,protein:5.7,isWholeGrain:false,colours:1}}],
+  'milk':         [{name:'Semi-Skimmed Milk',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:4.7,satFat:1.7,protein:3.4,isWholeGrain:false,colours:1}}],
+  'cheese':       [{name:'Cheddar Cheese',brand:'',nova:1,nutri:'D',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:0.1,satFat:21,protein:25,isWholeGrain:false,colours:1}},{name:'Feta Cheese',brand:'',nova:1,nutri:'C',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:0.5,satFat:14,protein:14,isWholeGrain:false,colours:1}}],
+  'oat milk':     [{name:'Oat Drink Barista',brand:'Oatly',nova:3,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:0.8,sugar:4,satFat:0.3,protein:1,isWholeGrain:true,colours:1}},{name:'Organic Oat Drink',brand:'Rude Health',nova:2,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.2,sugar:3.5,satFat:0.2,protein:1.2,isWholeGrain:true,colours:1}}],
+  'butter':       [{name:'Butter',brand:'',nova:1,nutri:'E',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0.6,satFat:51,protein:0.6,isWholeGrain:false,colours:1}}],
+  'olive oil':    [{name:'Extra Virgin Olive Oil',brand:'',nova:1,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:14,protein:0,isWholeGrain:false,colours:1}}],
+  'pesto':        [{name:'Basil Pesto',brand:"Sacla'",nova:3,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:1.5,sugar:2,satFat:5,protein:4,isWholeGrain:false,colours:1}},{name:'Green Pesto Genovese',brand:'Barilla',nova:3,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:1.2,sugar:1.5,satFat:4.5,protein:3.5,isWholeGrain:false,colours:1}}],
+  'hummus':       [{name:'Hummus',brand:'',nova:2,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:5.4,sugar:0.4,satFat:1.4,protein:7.5,isWholeGrain:false,colours:1}}],
+  'honey':        [{name:'Honey',brand:'',nova:1,nutri:'D',isPlant:true,isFermented:false,nutriData:{fiber:0.2,sugar:82,satFat:0,protein:0.3,isWholeGrain:false,colours:1}}],
+  'kimchi':       [{name:'Kimchi',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:true,nutriData:{fiber:1.6,sugar:0.5,satFat:0.1,protein:1.1,isWholeGrain:false,colours:1}}],
+  'miso':         [{name:'White Miso Paste',brand:'',nova:2,nutri:'C',isPlant:true,isFermented:true,nutriData:{fiber:2.3,sugar:6,satFat:0.6,protein:12,isWholeGrain:false,colours:1}}],
+  'kefir':        [{name:'Milk Kefir',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:4.5,satFat:2.6,protein:3.4,isWholeGrain:false,colours:1}}],
+  'kombucha':     [{name:'Kombucha',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:true,nutriData:{fiber:0,sugar:2,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'sauerkraut':   [{name:'Sauerkraut',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:true,nutriData:{fiber:2.9,sugar:0.6,satFat:0,protein:0.9,isWholeGrain:false,colours:1}}],
+  'quorn mince':  [{name:'Quorn Mince',brand:'Quorn',nova:2,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:4.5,sugar:1.2,satFat:0.7,protein:14.5,isWholeGrain:false,colours:1}},{name:'Quorn Mince (frozen)',brand:'Quorn',nova:2,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:4.5,sugar:1.2,satFat:0.7,protein:14.5,isWholeGrain:false,colours:1}}],
+  'halloumi':     [{name:'Halloumi',brand:'Cypressa',nova:1,nutri:'C',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0.5,satFat:12,protein:18,isWholeGrain:false,colours:1}},{name:'Light Halloumi',brand:"Sainsbury's",nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0.5,satFat:7,protein:19,isWholeGrain:false,colours:1}}],
+  'granola':      [{name:'Granola',brand:'',nova:3,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:3.5,sugar:18,satFat:2.5,protein:5,isWholeGrain:true,colours:1}}],
+  'kettle chips': [{name:'Sea Salt Kettle Chips',brand:'Kettle Brand',nova:3,nutri:'D',isPlant:false,isFermented:false,nutriData:{fiber:2,sugar:0.5,satFat:2.5,protein:2,isWholeGrain:false,colours:1}},{name:'Sweet Chilli Kettle Chips',brand:'Kettle Brand',nova:3,nutri:'D',isPlant:false,isFermented:false,nutriData:{fiber:1.8,sugar:3,satFat:2.2,protein:2,isWholeGrain:false,colours:1}}],
+
+  /* ── DRINKS — hot ── */
+  'black coffee':  [{name:'Black Coffee',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0.1,isWholeGrain:false,colours:1}}],
+  'coffee':        [{name:'Black Coffee',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0.1,isWholeGrain:false,colours:1}},{name:'Flat White',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:1,satFat:0.9,protein:2.5,isWholeGrain:false,colours:1}},{name:'Latte',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:1.5,satFat:1.1,protein:3,isWholeGrain:false,colours:1}},{name:'Cappuccino',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:1,satFat:0.7,protein:2,isWholeGrain:false,colours:1}},{name:'Americano',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0.1,isWholeGrain:false,colours:1}},{name:'Oat Milk Latte',brand:'',nova:2,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:0.3,sugar:2.5,satFat:0.4,protein:1.5,isWholeGrain:false,colours:1}},{name:'Oat Milk Flat White',brand:'',nova:2,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:0.3,sugar:2,satFat:0.3,protein:1.2,isWholeGrain:false,colours:1}}],
+  'flat white':    [{name:'Flat White',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:1,satFat:0.9,protein:2.5,isWholeGrain:false,colours:1}}],
+  'latte':         [{name:'Latte',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:1.5,satFat:1.1,protein:3,isWholeGrain:false,colours:1}},{name:'Oat Milk Latte',brand:'',nova:2,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:0.3,sugar:2.5,satFat:0.4,protein:1.5,isWholeGrain:false,colours:1}},{name:'Soy Latte',brand:'',nova:2,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:0.2,sugar:2,satFat:0.3,protein:2,isWholeGrain:false,colours:1}}],
+  'cappuccino':    [{name:'Cappuccino',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:1,satFat:0.7,protein:2,isWholeGrain:false,colours:1}}],
+  'americano':     [{name:'Americano',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0.1,isWholeGrain:false,colours:1}}],
+  'espresso':      [{name:'Espresso',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0.1,isWholeGrain:false,colours:1}}],
+  'mocha':         [{name:'Mocha',brand:'',nova:2,nutri:'C',isPlant:false,isFermented:false,nutriData:{fiber:0.5,sugar:12,satFat:2,protein:3,isWholeGrain:false,colours:1}}],
+  'black tea':     [{name:'Black Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'tea':           [{name:'Black Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}},{name:'Tea with Milk',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0.5,satFat:0.2,protein:0.5,isWholeGrain:false,colours:1}}],
+  'green tea':     [{name:'Green Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'herbal tea':    [{name:'Peppermint Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}},{name:'Chamomile Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}},{name:'Ginger Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}},{name:'Rooibos Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}},{name:'Echinacea Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'peppermint tea':[{name:'Peppermint Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'chamomile tea': [{name:'Chamomile Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'ginger tea':    [{name:'Ginger Tea',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'matcha':        [{name:'Matcha Latte',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0.5,sugar:1.5,satFat:0.7,protein:1.5,isWholeGrain:false,colours:1}},{name:'Matcha (plain)',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0.5,sugar:0,satFat:0,protein:0.5,isWholeGrain:false,colours:1}}],
+
+  /* ── DRINKS — cold ── */
+  'water':         [{name:'Water',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'sparkling water':[{name:'Sparkling Water',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0,protein:0,isWholeGrain:false,colours:1}}],
+  'orange juice':  [{name:'Orange Juice (fresh)',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:0.2,sugar:8.4,satFat:0,protein:0.7,isWholeGrain:false,colours:1}},{name:'Orange Juice (carton)',brand:'',nova:2,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:0.2,sugar:9,satFat:0,protein:0.6,isWholeGrain:false,colours:1}}],
+  'apple juice':   [{name:'Apple Juice',brand:'',nova:2,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:0.1,sugar:10,satFat:0,protein:0.1,isWholeGrain:false,colours:1}}],
+  'smoothie':      [{name:'Green Smoothie',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.5,sugar:8,satFat:0.2,protein:1.5,isWholeGrain:false,colours:1}},{name:'Berry Smoothie',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:2,sugar:12,satFat:0.1,protein:1,isWholeGrain:false,colours:1}}],
+  'kefir':         [{name:'Milk Kefir',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:true,nutriData:{fiber:0,sugar:4.8,satFat:2,protein:3.3,isWholeGrain:false,colours:1}},{name:'Coconut Kefir',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:true,nutriData:{fiber:0,sugar:2,satFat:8,protein:0.5,isWholeGrain:false,colours:1}}],
+
+  /* ── MORE WHOLE FOODS — vegetables ── */
+  'courgette':     [{name:'Courgette',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.1,sugar:2.5,satFat:0,protein:1.2,isWholeGrain:false,colours:1}}],
+  'aubergine':     [{name:'Aubergine',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.5,sugar:3.5,satFat:0.1,protein:1,isWholeGrain:false,colours:1}}],
+  'butternut squash':[{name:'Butternut Squash',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2,sugar:4.4,satFat:0.1,protein:1,isWholeGrain:false,colours:1}}],
+  'beetroot':      [{name:'Beetroot (cooked)',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.5,sugar:7,satFat:0,protein:1.7,isWholeGrain:false,colours:1}}],
+  'peas':          [{name:'Garden Peas',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:5.1,sugar:4.2,satFat:0.1,protein:6.9,isWholeGrain:false,colours:1}}],
+  'leek':          [{name:'Leek',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.8,sugar:3,satFat:0.1,protein:1.6,isWholeGrain:false,colours:1}}],
+  'asparagus':     [{name:'Asparagus',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.1,sugar:1.3,satFat:0.1,protein:2.9,isWholeGrain:false,colours:1}}],
+  'celery':        [{name:'Celery',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.6,sugar:1.8,satFat:0,protein:0.7,isWholeGrain:false,colours:1}}],
+  'garlic':        [{name:'Garlic',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:2.1,sugar:1,satFat:0.1,protein:6.4,isWholeGrain:false,colours:1}}],
+  'ginger':        [{name:'Fresh Ginger',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2,sugar:1.7,satFat:0.1,protein:1.8,isWholeGrain:false,colours:1}}],
+  'spring onion':  [{name:'Spring Onion',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.7,sugar:2.3,satFat:0,protein:1.9,isWholeGrain:false,colours:1}}],
+  'corn':          [{name:'Sweetcorn',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:2.7,sugar:3.2,satFat:0.5,protein:3.3,isWholeGrain:true,colours:1}}],
+
+  /* ── MORE WHOLE FOODS — fruit ── */
+  'mango':         [{name:'Mango',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.6,sugar:14,satFat:0.1,protein:0.8,isWholeGrain:false,colours:1}}],
+  'pineapple':     [{name:'Pineapple',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.4,sugar:10,satFat:0,protein:0.5,isWholeGrain:false,colours:1}}],
+  'grapes':        [{name:'Grapes',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:0.9,sugar:16,satFat:0,protein:0.6,isWholeGrain:false,colours:1}}],
+  'pear':          [{name:'Pear',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:3.1,sugar:10,satFat:0,protein:0.4,isWholeGrain:false,colours:1}}],
+  'orange':        [{name:'Orange',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.4,sugar:9,satFat:0,protein:0.9,isWholeGrain:false,colours:1}}],
+  'peach':         [{name:'Peach',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:1.5,sugar:8,satFat:0,protein:0.9,isWholeGrain:false,colours:1}}],
+  'watermelon':    [{name:'Watermelon',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:0.4,sugar:6,satFat:0,protein:0.6,isWholeGrain:false,colours:1}}],
+  'melon':         [{name:'Cantaloupe Melon',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:0.9,sugar:8,satFat:0.1,protein:0.8,isWholeGrain:false,colours:1}}],
+  'kiwi':          [{name:'Kiwi',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:3,sugar:9,satFat:0,protein:1.1,isWholeGrain:false,colours:1}}],
+  'pomegranate':   [{name:'Pomegranate Seeds',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:4,sugar:14,satFat:0.1,protein:1.7,isWholeGrain:false,colours:1}}],
+  'lemon':         [{name:'Lemon',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.8,sugar:2.5,satFat:0,protein:1.1,isWholeGrain:false,colours:1}}],
+  'lime':          [{name:'Lime',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:2.8,sugar:1.7,satFat:0,protein:0.7,isWholeGrain:false,colours:1}}],
+
+  /* ── MORE WHOLE FOODS — nuts, seeds, fats ── */
+  'almonds':       [{name:'Almonds',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:12.5,sugar:4.4,satFat:3.7,protein:21,isWholeGrain:false,colours:1}}],
+  'walnuts':       [{name:'Walnuts',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:6.7,sugar:2.6,satFat:6.1,protein:15,isWholeGrain:false,colours:1}}],
+  'cashews':       [{name:'Cashews',brand:'',nova:1,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:3.3,sugar:5.9,satFat:9.2,protein:18,isWholeGrain:false,colours:1}}],
+  'peanuts':       [{name:'Peanuts',brand:'',nova:1,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:8.5,sugar:4.7,satFat:7,protein:26,isWholeGrain:false,colours:1}}],
+  'peanut butter': [{name:'Peanut Butter (natural)',brand:'',nova:1,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:6,sugar:3.6,satFat:7,protein:25,isWholeGrain:false,colours:1}}],
+  'chia seeds':    [{name:'Chia Seeds',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:34,sugar:0,satFat:3.3,protein:16,isWholeGrain:false,colours:1}}],
+  'flaxseeds':     [{name:'Flaxseeds',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:27,sugar:1.5,satFat:3.7,protein:18,isWholeGrain:false,colours:1}}],
+  'sunflower seeds':[{name:'Sunflower Seeds',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:8.6,sugar:2.6,satFat:4.5,protein:21,isWholeGrain:false,colours:1}}],
+  'pumpkin seeds': [{name:'Pumpkin Seeds',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:6,sugar:1.4,satFat:8.7,protein:30,isWholeGrain:false,colours:1}}],
+  'tahini':        [{name:'Tahini',brand:'',nova:1,nutri:'C',isPlant:true,isFermented:false,nutriData:{fiber:9.3,sugar:0.5,satFat:8.4,protein:17,isWholeGrain:false,colours:1}}],
+  'coconut oil':   [{name:'Coconut Oil',brand:'',nova:1,nutri:'E',isPlant:true,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:86,protein:0,isWholeGrain:false,colours:1}}],
+
+  /* ── MORE WHOLE FOODS — protein ── */
+  'lamb':          [{name:'Lamb Mince',brand:'',nova:1,nutri:'C',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:9,protein:18,isWholeGrain:false,colours:1}}],
+  'pork':          [{name:'Pork Tenderloin',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:1.5,protein:26,isWholeGrain:false,colours:1}}],
+  'cod':           [{name:'Cod Fillet',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0.2,protein:18,isWholeGrain:false,colours:1}}],
+  'mackerel':      [{name:'Mackerel Fillet',brand:'',nova:1,nutri:'B',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:4.9,protein:19,isWholeGrain:false,colours:1}}],
+  'sardines':      [{name:'Sardines (tinned)',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:3.3,protein:25,isWholeGrain:false,colours:1}}],
+  'prawns':        [{name:'Prawns',brand:'',nova:1,nutri:'A',isPlant:false,isFermented:false,nutriData:{fiber:0,sugar:0,satFat:0.2,protein:18,isWholeGrain:false,colours:1}}],
+  'tempeh':        [{name:'Tempeh',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:true,nutriData:{fiber:9,sugar:0,satFat:2.7,protein:19,isWholeGrain:false,colours:1}}],
+  'black beans':   [{name:'Black Beans',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:8.7,sugar:0.3,satFat:0.2,protein:8.9,isWholeGrain:true,colours:1}}],
+  'kidney beans':  [{name:'Kidney Beans',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:6.4,sugar:0.3,satFat:0.1,protein:8.7,isWholeGrain:true,colours:1}}],
+  'butter beans':  [{name:'Butter Beans',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:5.4,sugar:0.5,satFat:0.1,protein:7.7,isWholeGrain:true,colours:1}}],
+
+  /* ── MORE WHOLE FOODS — grains & carbs ── */
+  'barley':        [{name:'Pearl Barley',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:15.6,sugar:0.4,satFat:0.2,protein:10,isWholeGrain:true,colours:1}}],
+  'buckwheat':     [{name:'Buckwheat',brand:'',nova:1,nutri:'A',isPlant:true,isFermented:false,nutriData:{fiber:10,sugar:0,satFat:0.6,protein:13,isWholeGrain:true,colours:1}}],
+  'millet':        [{name:'Millet',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:8.5,sugar:0,satFat:0.9,protein:11,isWholeGrain:true,colours:1}}],
+  'potato':        [{name:'Baked Potato',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:2.2,sugar:0.6,satFat:0.1,protein:2.1,isWholeGrain:false,colours:1}},{name:'Boiled Potato',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:1.2,sugar:0.6,satFat:0,protein:1.8,isWholeGrain:false,colours:1}}],
+  'hummus':        [{name:'Hummus',brand:'',nova:1,nutri:'B',isPlant:true,isFermented:false,nutriData:{fiber:6,sugar:0.5,satFat:2,protein:7.9,isWholeGrain:false,colours:1}}]
+};
+
+/* ── HELPERS ── */
+function gv(s){return s===1?0.3:s===2?0.6:1.0}
+function glowLabel(g){return g>=0.75?'High glow':g>=0.46?'Medium glow':'Neutral glow'}
+function glowCol(g){return g>=0.75?'#3B6D11':g>=0.46?'#BA7517':'#888780'}
+function glowBg(g){return g>=0.75?'#EAF3DE':g>=0.46?'#FAEEDA':'#F1EFE8'}
+function glowEmoji(g){return g>=0.75?'🟢':g>=0.46?'🟡':'⚫'}
+function novaClass(n){return n<=2?'nova-1':n===3?'nova-3':'nova-4'}
+
+/* ── GLOW SCORING — divisor 6.7 (fermented foods deferred, Phase 2 = 7.5) ── */
+function calcMealGlow(){
+  var items=document.querySelectorAll('#ingredient-list .ingredient-item');
+  if(!items.length)return null;
+  var tp=0,ts=0,pc=0,wc=0,mc=0,wn=1;
+  items.forEach(function(it){
+    tp+=parseFloat(it.getAttribute('data-protein')||0);
+    ts+=parseFloat(it.getAttribute('data-satfat')||0);
+    if(it.getAttribute('data-is-plant')==='1')pc++;
+    if(it.getAttribute('data-is-wholegrain')==='1')wc++;
+    var c=parseInt(it.getAttribute('data-colours')||1);if(c>mc)mc=c;
+    var n=parseInt(it.getAttribute('data-nova')||3);if(n>wn)wn=n;
+  });
+  var cP=pc>=4?3:pc>=2?2:1, cPr=tp>=20?3:tp>=10?2:1, cC=wc>=2?3:wc>=1?2:1;
+  var cF=ts<=3?3:ts<=8?2:1, cCol=mc||1, cH=2, cU=wn===4?1:wn===3?2:3;
+  var pos=gv(cP)*1.5+gv(cPr)*1.2+gv(cC)*1.0+gv(cF)*1.0+gv(cCol)*1.5+gv(cH)*0.5;
+  return Math.round(Math.max(0,Math.min(1,(pos-(1-gv(cU))*1.0)/6.7))*100)/100;
+}
+
+function collectIngredients(){var arr=[];document.querySelectorAll('#ingredient-list .ingredient-item').forEach(function(it){arr.push({name:it.querySelector('.ing-name').textContent,nova:parseInt(it.getAttribute('data-nova')||3),isPlant:it.getAttribute('data-is-plant')==='1',isFermented:it.getAttribute('data-is-fermented')==='1',isWholeGrain:it.getAttribute('data-is-wholegrain')==='1',protein:parseFloat(it.getAttribute('data-protein')||0),satFat:parseFloat(it.getAttribute('data-satfat')||0),sugar:parseFloat(it.getAttribute('data-sugar')||0),colours:parseInt(it.getAttribute('data-colours')||1)});});return arr;}
+function collectPlants(){var p=[];document.querySelectorAll('#ingredient-list .ingredient-item').forEach(function(it){if(it.getAttribute('data-is-plant')==='1')p.push(it.querySelector('.ing-name').textContent);});return p;}
+function collectWorstNova(){var w=1;document.querySelectorAll('#ingredient-list .ingredient-item').forEach(function(it){var n=parseInt(it.getAttribute('data-nova')||1);if(n>w)w=n;});return w;}
+function collectHasFermented(){var f=false;document.querySelectorAll('#ingredient-list .ingredient-item').forEach(function(it){if(it.getAttribute('data-is-fermented')==='1')f=true;});return f;}
+
+function updateGlowPreview(){
+  var score=calcMealGlow(),items=document.querySelectorAll('#ingredient-list .ingredient-item');
+  if(!items.length||score===null){
+    document.getElementById('glow-score-disp').textContent='Add ingredients to build your score';
+    document.getElementById('glow-bar').style.width='0%';
+    document.getElementById('glow-dot').style.background='#F1EFE8';
+    document.getElementById('glow-dot').style.border='2px solid #D3D1C7';
+    document.getElementById('glow-dot').textContent='○';
+    return;
+  }
+  document.getElementById('glow-score-disp').textContent=items.length+' ingredient'+(items.length>1?'s':'')+' · score reveals on log';
+  document.getElementById('glow-bar').style.width=(score*100)+'%';
+  document.getElementById('glow-bar').style.background=glowCol(score);
+  document.getElementById('glow-dot').style.background=glowBg(score);
+  document.getElementById('glow-dot').style.border='2px solid '+glowCol(score);
+  document.getElementById('glow-dot').textContent=glowEmoji(score);
+}
+
+/* ── DASHBOARD ── */
+
+// Returns one score-object per unique (date × mealType) group across SESSION_LOG
+// Used by the dashboard so individual items and named meals are treated consistently
+function getGroupedMealScores(){
+  var seen={},order=[];
+  SESSION_LOG.forEach(function(m){
+    if(!m.loggedAt)return;
+    var key=m.loggedAt.toDateString()+'|'+(m.mealType||'Meal');
+    if(!seen[key]){
+      seen[key]={mealType:m.mealType||'Meal',date:m.loggedAt,ingredients:[],plants:[],hasFermented:false,worstNova:1,names:[]};
+      order.push(key);
+    }
+    var g=seen[key];
+    if(m.ingredients)g.ingredients=g.ingredients.concat(m.ingredients);
+    if(m.plants)g.plants=g.plants.concat(m.plants);
+    if(m.hasFermented)g.hasFermented=true;
+    if((m.worstNova||1)>g.worstNova)g.worstNova=m.worstNova||1;
+    if(m.name&&!m.isIndividualItem)g.names.push(m.name);
+    else if(m.isIndividualItem&&m.name)g.names.push(m.name);
+  });
+  return order.map(function(key){
+    var g=seen[key];
+    var score=calcGlowFromIngredients(g.ingredients);
+    var uniquePlants=g.plants.filter(function(v,i,a){return a.indexOf(v)===i;});
+    var displayName=g.names.length===1&&!SESSION_LOG.find(function(m){return m.mealType===g.mealType&&m.loggedAt&&isSameDayAs(m.loggedAt,g.date)&&m.isIndividualItem;})?g.names[0]:g.mealType;
+    return{score:score,plants:uniquePlants,hasFermented:g.hasFermented,worstNova:g.worstNova,name:displayName,mealType:g.mealType};
+  });
+}
+
+function updateDashboard(){
+  var log=SESSION_LOG;
+  if(!log.length){
+    document.getElementById('dash-empty').style.display='';
+    document.getElementById('dash-data').style.display='none';
+    document.getElementById('dash-highlights').style.display='none';
+    document.getElementById('dash-plants-card').style.display='none';
+    return;
+  }
+  document.getElementById('dash-empty').style.display='none';
+  document.getElementById('dash-data').style.display='';
+  document.getElementById('dash-highlights').style.display='';
+
+  var groups=getGroupedMealScores();
+  var avg=Math.round(groups.reduce(function(s,g){return s+g.score;},0)/groups.length*100)/100;
+  var col=glowCol(avg);
+  document.getElementById('dash-score-num').textContent=avg.toFixed(2);
+  document.getElementById('dash-ring-label').textContent=glowLabel(avg).replace(' glow','');
+  var r=document.getElementById('dash-ring-fill');
+  r.setAttribute('stroke-dashoffset',Math.round(175.9*(1-avg)));
+  r.setAttribute('stroke',col);
+  var tier=avg>=0.75?'high':avg>=0.46?'mid':'low';
+  document.getElementById('dash-title').textContent=tier==='high'?'Glowing!':tier==='mid'?'Almost glowing':'Building your glow';
+  document.getElementById('dash-sub').textContent='Based on '+groups.length+' meal'+(groups.length>1?'s':'')+' this session. '+{high:'All your meals are hitting great scores.',mid:'One more colourful meal could push you into High Glow.',low:'Try adding more plants or a wholegrain next time.'}[tier];
+  var hm=groups.filter(function(g){return g.score>=0.46;}).length;
+  document.getElementById('dash-hm-count').textContent=hm;
+  document.getElementById('dash-hm-total').textContent='/'+groups.length;
+  document.getElementById('dash-hm-bar').style.width=Math.round(hm/groups.length*100)+'%';
+  document.getElementById('dash-meal-count').textContent=groups.length;
+  document.getElementById('dash-meal-count').style.color=col;
+  document.getElementById('dash-meal-bar').style.width=Math.min(groups.length*10,100)+'%';
+  document.getElementById('dash-meal-bar').style.background=col;
+  var tr=document.getElementById('dash-trend');
+  if(groups.length>=2){
+    var h=Math.floor(groups.length/2);
+    var f=groups.slice(0,h).reduce(function(s,g){return s+g.score;},0)/h;
+    var s2=groups.slice(h).reduce(function(s,g){return s+g.score;},0)/(groups.length-h);
+    var d=s2-f;
+    tr.style.display='inline-flex';
+    tr.className='trend-chip'+(d<-0.01?' down':'');
+    document.getElementById('dash-trend-text').textContent=d>0.01?'Trending up':d<-0.01?'Trending down':'Holding steady';
+    tr.querySelector('polyline').setAttribute('points',d>=0?'18 15 12 9 6 15':'18 9 12 15 6 9');
+  } else { tr.style.display='none'; }
+  var best=groups.reduce(function(a,b){return b.score>a.score?b:a;});
+  document.getElementById('dash-best-name').textContent=best.name;
+  var bp=best.plants&&best.plants.length;
+  document.getElementById('dash-best-reason').textContent=best.score>=0.75&&bp?'Packed with colour and plant variety — a really balanced plate.':bp?'Great plant variety on this one.':best.worstNova<=2?'Minimal processing — clean and nourishing.':'Well-rounded meal with good balance.';
+  var tp2=groups.reduce(function(s,g){return s+g.plants.length;},0);
+  var n4=groups.filter(function(g){return g.worstNova===4;}).length;
+  var ni=document.getElementById('dash-insight-nailed'),ei=document.getElementById('dash-insight-explore');
+  if(tp2>=4){ni.style.display='';document.getElementById('dash-insight-nailed-text').textContent='Plant variety — you\'ve logged '+tp2+' plant ingredients across your meals.';}
+  else if(avg>=0.6){ni.style.display='';document.getElementById('dash-insight-nailed-text').textContent='Colour variety — most of your meals have included good colour diversity.';}
+  else{ni.style.display='none';}
+  if(tp2<3&&groups.length>=2){ei.style.display='';document.getElementById('dash-insight-explore-text').textContent='Plant variety — try adding an extra vegetable, legume or fruit to your next meal.';}
+  else if(n4>0){ei.style.display='';document.getElementById('dash-insight-explore-text').textContent='Ultra-processed foods appeared in '+n4+' meal'+(n4>1?'s':'')+' — swapping one item can lift your score.';}
+  else{ei.style.display='none';}
+  var ap=[];groups.forEach(function(g){ap=ap.concat(g.plants);});
+  var up=ap.filter(function(v,i,a){return a.indexOf(v)===i;});
+  if(up.length){
+    document.getElementById('dash-plants-card').style.display='';
+    document.getElementById('dash-plants-count').textContent=up.length;
+    document.getElementById('dash-plants-ring').setAttribute('stroke-dashoffset',Math.round(157.1*Math.max(0,1-up.length/30)));
+    document.getElementById('dash-plants-title').textContent=up.length>=20?'Impressive variety!':up.length>=10?'Lovely variety so far':up.length>=5?'Good start':'Keep exploring';
+    document.getElementById('dash-plants-sub').textContent=up.length>=20?'Hitting excellent plant diversity.':'Aim for 30 different plants a week for best gut health.';
+    var sh=up.slice(0,5),re=up.length-sh.length;
+    document.getElementById('dash-plant-chips').innerHTML=sh.map(function(p){return'<span class="plant-chip">'+p+'</span>';}).join('')+(re>0?'<span class="more-chip">+'+re+' more</span>':'');
+  } else { document.getElementById('dash-plants-card').style.display='none'; }
+}
+
+/* ── SCREEN 1 ── */
+function quickAdd(i){var b=document.getElementById('qadd-'+i);if(b.classList.contains('done'))return;b.classList.add('done');b.textContent='✓';showToast('toast1');}
+function showToast(id){var t=document.getElementById(id);t.classList.add('show');setTimeout(function(){t.classList.remove('show');},1800);}
+function toggleFeed(t){
+  document.getElementById('tog-r').classList.toggle('active',t==='recent');
+  document.getElementById('tog-s').classList.toggle('active',t==='saved');
+  if(t==='saved'){showSavedMeals();}
+}
+
+/* ── SAVED MEALS — separate store, never affected by log deletions ── */
+function getSavedMeals(){
+  return SAVED_MEALS_STORE.slice();
+}
+
+function showSavedMeals(){
+  document.getElementById('tog-s').classList.add('active');
+  document.getElementById('tog-r').classList.remove('active');
+  renderSavedMealsModal();
+  document.getElementById('saved-modal').classList.add('show');
+}
+
+function renderSavedMealsModal(){
+  var meals=getSavedMeals();
+  var body=document.getElementById('saved-modal-body');
+  if(!meals.length){
+    body.innerHTML='<div style="text-align:center;padding:24px 20px;color:var(--hint);font-size:12px;line-height:1.6">No saved meals yet.<br>Log a meal with "Save meal" toggled on to see it here.</div>';
+    return;
+  }
+  var mealTypes=['Breakfast','Lunch','Dinner','Snack'];
+  body.innerHTML=meals.map(function(m,i){
+    var col=glowCol(m.score),bg=glowBg(m.score),emoji=glowEmoji(m.score);
+    var pc=m.plants?m.plants.length:0;
+    var meta=(pc>0?pc+' plant'+(pc>1?'s':''):'no plants');
+    if(m.hasFermented)meta+=' · fermented';
+    meta+=' · '+glowLabel(m.score);
+    var typeButtons=mealTypes.map(function(t){
+      return'<button onclick="quickLogSaved('+i+',\''+t+'\')" style="'
+        +'background:var(--cream);border:1px solid var(--border);border-radius:8px;'
+        +'padding:4px 10px;color:var(--ink);font-size:11px;font-weight:600;cursor:pointer;'
+        +'font-family:\'DM Sans\',sans-serif;white-space:nowrap"'
+        +'>'+t+'</button>';
+    }).join('');
+    return'<div class="saved-meal-item" style="flex-direction:column;align-items:stretch;gap:8px" id="saved-item-'+i+'">'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+        +'<div class="saved-meal-thumb" style="background:'+bg+'">'+emoji+'</div>'
+        +'<div class="saved-meal-info">'
+          +'<div class="saved-meal-name">'+m.savedMealName+'</div>'
+          +'<div class="saved-meal-meta" style="color:'+col+'">'+meta+'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;padding-left:2px;flex-wrap:wrap;align-items:center">'
+        +'<span style="font-size:11px;color:var(--hint)">Log as:</span>'
+        +typeButtons
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function closeSavedModal(e){
+  if(!e||e.target===document.getElementById('saved-modal')){
+    document.getElementById('saved-modal').classList.remove('show');
+    document.getElementById('tog-r').classList.add('active');
+    document.getElementById('tog-s').classList.remove('active');
+  }
+}
+
+function quickLogSaved(i,mealType){
+  var meals=getSavedMeals();
+  var m=meals[i];
+  if(!m||!mealType)return;
+  // Mark all type buttons in this item as logged
+  var item=document.getElementById('saved-item-'+i);
+  if(item){
+    item.querySelectorAll('button').forEach(function(b){b.disabled=true;b.style.opacity='0.4';});
+    var chosen=Array.from(item.querySelectorAll('button')).find(function(b){return b.textContent===mealType;});
+    if(chosen){chosen.style.opacity='1';chosen.style.background='var(--orange)';chosen.style.color='#fff';chosen.textContent='\u2713 '+mealType;}
+  }
+  var qEntry=Object.assign({},m,{loggedAt:new Date(),isSavedMeal:false,mealType:mealType,userSavedOnLog:false,loggedFromSaved:true});
+  SESSION_LOG.push(qEntry);
+  postToSheet(qEntry);
+  saveSession();
+  updateDashboard();updateTodayLog();updateScreen1();
+  setTimeout(function(){
+    document.getElementById('saved-modal').classList.remove('show');
+    document.getElementById('tog-r').classList.add('active');
+    document.getElementById('tog-s').classList.remove('active');
+    showToast('toast1');
+  },600);
+}
+
+/* ── SCREEN 1 — RECENT ITEMS + SAVED MEALS BADGE ── */
+function updateScreen1(){
+  updateRecentItems();
+  updateSavedMealsBadge();
+}
+
+function updateRecentItems(){
+  var feed=document.getElementById('recent-feed');
+  if(!feed)return;
+  // Gather recent individual ingredients across all logged meals, most recent first
+  var recent=[];
+  SESSION_LOG.slice().reverse().forEach(function(m){
+    if(m.ingredients&&m.ingredients.length){
+      m.ingredients.forEach(function(ing){
+        if(!recent.find(function(r){return r.name===ing.name;})){
+          recent.push(Object.assign({},ing,{fromMeal:m.name,loggedAt:m.loggedAt}));
+        }
+      });
+    }
+  });
+  recent=recent.slice(0,12); // cap at 12 unique recent ingredients
+  if(!recent.length){
+    feed.innerHTML='<div style="text-align:center;padding:30px 20px;color:var(--hint);font-size:12px;line-height:1.6">No recent items yet.<br>Log your first meal to see it here.</div>';
+    return;
+  }
+  feed.innerHTML=recent.map(function(ing,i){
+    var nc=novaClass(ing.nova);
+    return'<div class="food-item">'
+      +'<div class="food-thumb"><span style="font-size:18px">'+(ing.isPlant?'🌿':'🍽')+'</span></div>'
+      +'<div class="food-info">'
+        +'<div class="food-name">'+ing.name+'</div>'
+        +'<div class="food-meta">'
+          +'<span class="nova-pill '+nc+'">NOVA '+ing.nova+'</span>'
+          +(ing.isPlant?'<span class="plant-pill">Plant</span>':'')
+          +(ing.isFermented?'<span class="ferm-pill">Fermented</span>':'')
+        +'</div>'
+      +'</div>'
+      +'<button class="add-btn" id="qadd-r-'+i+'" onclick="quickAddRecent('+i+',this)" title="Add to current meal">+</button>'
+    +'</div>';
+  }).join('');
+  window._recentIngredients=recent;
+}
+
+function updateSavedMealsBadge(){
+  var saved=getSavedMeals();
+  var btn=document.getElementById('tog-s');
+  if(!btn)return;
+  if(saved.length){
+    btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Saved meals <span style="background:var(--orange);color:#fff;border-radius:99px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:2px">'+saved.length+'</span>';
+  } else {
+    btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Saved meals';
+  }
+}
+
+function quickAddRecent(i,btn){
+  var ing=window._recentIngredients&&window._recentIngredients[i];
+  if(!ing||btn.classList.contains('done'))return;
+  addIngredientToMeal(ing.name,ing.nova,{protein:ing.protein,satFat:ing.satFat,sugar:ing.sugar,isWholeGrain:ing.isWholeGrain,colours:ing.colours},ing.isPlant,ing.isFermented,'recent');
+  btn.classList.add('done');btn.textContent='✓';
+}
+
+/* ── INGREDIENT SEARCH ── */
+function handleIngSearchKey(e){if(e.key==='Enter')runIngSearch();}
+
+function runIngSearch(){
+  var val=document.getElementById('ing-search').value.trim();if(!val)return;
+  var key=val.toLowerCase(),matches=[],seen={};
+  Object.keys(MOCK_DATA).forEach(function(k){
+    if(k.includes(key)||key.includes(k)||key.split(' ').some(function(w){return w.length>2&&k.includes(w);})){
+      MOCK_DATA[k].forEach(function(item){if(!seen[item.name]){seen[item.name]=true;matches.push(Object.assign({},item,{_source:'mock'}));}});
+    }
+  });
+  if(matches.length){showIngResults(matches);}
+  else{showIngNotFound(val);}
+}
+
+function showIngNotFound(val){
+  var box=document.getElementById('ing-search-results');box.style.display='';
+  box.innerHTML='<div style="padding:10px 12px;font-size:12px;color:var(--muted)">No results for "<strong>'+val+'</strong>"</div>';
+}
+
+function showIngResults(products){
+  var box=document.getElementById('ing-search-results');box.style.display='';
+  box.innerHTML=products.map(function(m,i){
+    var nc=novaClass(m.nova);
+    return'<div style="display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:.5px solid var(--border)">'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+m.name+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:4px;flex-wrap:wrap">'
+          +(m.brand?'<span>'+m.brand.split(',')[0]+'</span>':'')
+          +'<span class="nova-pill '+nc+'">NOVA '+m.nova+'</span>'
+          +(m.isPlant?'<span class="plant-pill">Plant</span>':'')
+          +(m.isFermented?'<span class="ferm-pill">Fermented</span>':'')
+          +(m._source==='api'?'<span style="background:#E8F4F8;color:#1A5C6B;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600">Live API</span>'
+            :m._source==='barcode'?'<span style="background:var(--gray-bg);color:var(--muted);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600">Barcode</span>'
+            :'<span style="background:var(--amber-bg);color:var(--amber-text);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600">Mock</span>')
+        +'</div>'
+      +'</div>'
+      +'<button style="background:var(--orange);border:none;border-radius:8px;padding:5px 12px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;flex-shrink:0" onclick="pickIngResult('+i+')">Add</button>'
+      +'</div>';
+  }).join('');
+  window._ingResults=products;
+}
+
+function pickIngResult(i){
+  var m=window._ingResults[i];
+  addIngredientToMeal(m.name,m.nova,m.nutriData,m.isPlant,m.isFermented,m._source||'mock');
+  document.getElementById('ing-search').value='';
+  document.getElementById('ing-search-results').style.display='none';
+  window._ingResults=[];
+}
+
+function mapHit(hit){
+  var nova=parseInt(hit.nova_group)||3,fiber=parseFloat((hit.nutriments||{})['fiber_100g'])||0,sugar=parseFloat((hit.nutriments||{})['sugars_100g'])||0,satFat=parseFloat((hit.nutriments||{})['saturated-fat_100g'])||0,protein=parseFloat((hit.nutriments||{})['proteins_100g'])||0,cats=hit.categories_tags||[];
+  var isFruit=cats.some(function(c){return/fruit|vegetable|produce/.test(c);}),isWG=cats.some(function(c){return/legume|pulse|wholegrain|oat|grain/.test(c);}),isFermented=cats.some(function(c){return/yogurt|kefir|cheese|ferment|miso|kimchi|sauerkraut/.test(c);}),isPlant=isFruit||cats.some(function(c){return/plant|vegan|vegetable|legume|pulse/.test(c);});
+  return{name:hit.product_name||hit.product_name_en||'Unknown',brand:hit.brands||'',nova,nutri:(hit.nutriscore_grade||'').toUpperCase(),isPlant,isFermented,nutriData:{fiber,sugar,satFat,protein,isWholeGrain:isWG,colours:isFruit?3:fiber>=2?2:1}};
+}
+
+function addIngredientToMeal(name,nova,nutriData,isPlant,isFermented,source){
+  var list=document.getElementById('ingredient-list'),item=document.createElement('div');
+  item.className='ingredient-item';
+  item.setAttribute('data-nova',nova);
+  item.setAttribute('data-protein',nutriData.protein);
+  item.setAttribute('data-satfat',nutriData.satFat);
+  item.setAttribute('data-sugar',nutriData.sugar||0);
+  item.setAttribute('data-is-plant',isPlant?'1':'0');
+  item.setAttribute('data-is-wholegrain',nutriData.isWholeGrain?'1':'0');
+  item.setAttribute('data-is-fermented',isFermented?'1':'0');
+  item.setAttribute('data-colours',nutriData.colours);
+  var nc=novaClass(nova);
+  var sourceTag=source==='api'
+    ?'<span style="background:#E8F4F8;color:#1A5C6B;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600">Live API</span>'
+    :source==='barcode'
+    ?'<span style="background:var(--gray-bg);color:var(--muted);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600">Barcode</span>'
+    :source==='recent'
+    ?'<span style="background:var(--orange-light);color:var(--orange-dark);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600">Recent</span>'
+    :'<span style="background:var(--amber-bg);color:var(--amber-text);border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600">Mock</span>';
+  item.innerHTML='<div class="ing-left"><div class="ing-name">'+name+'</div><div class="ing-badges">'+(isPlant?'<span class="plant-pill">Plant</span>':'')+(isFermented?'<span class="ferm-pill">Fermented</span>':'')+'<span class="nova-pill '+nc+'">NOVA '+nova+'</span>'+sourceTag+'</div></div><button class="del-btn" onclick="removeIng(this)">×</button>';
+  list.appendChild(item);
+  updateGlowPreview();
+}
+
+function selectMealTab(el){document.querySelectorAll('.meal-tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');var lbl=document.getElementById('meal-name-label');if(lbl)lbl.textContent='Name your '+el.textContent.toLowerCase();}
+function removeIng(btn){var item=btn.closest('.ingredient-item');item.style.opacity='0';item.style.transition='opacity .15s';setTimeout(function(){item.remove();updateGlowPreview();},150);}
+
+window.toggleSaveMeal=function(){
+  var tog=document.getElementById('save-toggle'),sec=document.getElementById('meal-name-section'),isOn=tog.classList.contains('off');
+  tog.classList.toggle('off',!isOn);sec.style.display=isOn?'':'none';
+  if(isOn)document.getElementById('meal-name').focus();
+};
+
+/* ── GROUP SCORING — combines all entries for a mealType on a given day ── */
+function getGroupIngredients(mealType, date){
+  // Collect all ingredients from all SESSION_LOG entries matching mealType + day
+  var allIngs=[];
+  SESSION_LOG.forEach(function(m){
+    if(m.mealType===mealType && m.loggedAt &&
+       isSameDayAs(m.loggedAt, date)){
+      if(m.ingredients) allIngs=allIngs.concat(m.ingredients);
+    }
+  });
+  return allIngs;
+}
+
+function isSameDayAs(a, b){
+  return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+}
+
+function calcGlowFromIngredients(ings){
+  if(!ings.length)return 0;
+  var tp=0,ts=0,pc=0,wc=0,mc=0,wn=1;
+  ings.forEach(function(ing){
+    tp+=ing.protein||0;
+    ts+=ing.satFat||0;
+    if(ing.isPlant)pc++;
+    if(ing.isWholeGrain)wc++;
+    var c=ing.colours||1;if(c>mc)mc=c;
+    var n=ing.nova||3;if(n>wn)wn=n;
+  });
+  var cP=pc>=4?3:pc>=2?2:1,cPr=tp>=20?3:tp>=10?2:1,cC=wc>=2?3:wc>=1?2:1;
+  var cF=ts<=3?3:ts<=8?2:1,cCol=mc||1,cH=2,cU=wn===4?1:wn===3?2:3;
+  var pos=gv(cP)*1.5+gv(cPr)*1.2+gv(cC)*1.0+gv(cF)*1.0+gv(cCol)*1.5+gv(cH)*0.5;
+  return Math.round(Math.max(0,Math.min(1,(pos-(1-gv(cU))*1.0)/6.7))*100)/100;
+}
+
+function getGroupScore(mealType, date){
+  var ings=getGroupIngredients(mealType, date);
+  return calcGlowFromIngredients(ings);
+}
+
+var _loggingInProgress=false;
+function logFood(){
+  if(_loggingInProgress)return;
+  _loggingInProgress=true;
+  var score=calcMealGlow();if(score===null){_loggingInProgress=false;alert('Add at least one ingredient first.');return;}
+  var saveOn=!document.getElementById('save-toggle').classList.contains('off');
+  var mealType=document.querySelector('.meal-tab.active').textContent;
+  var now=new Date();
+  var ingredients=collectIngredients();
+
+  // Name is required when save toggle is on
+  if(saveOn){
+    var nameVal=document.getElementById('meal-name').value.trim();
+    if(!nameVal){
+      document.getElementById('meal-name').focus();
+      document.getElementById('meal-name').style.borderColor='#C0392B';
+      document.getElementById('meal-name').placeholder='Please enter a name to save this meal';
+      setTimeout(function(){
+        document.getElementById('meal-name').style.borderColor='';
+        document.getElementById('meal-name').placeholder='e.g. Greek yogurt and berries';
+      },2500);
+      return;
+    }
+    // Saved meal — write to SAVED_MEALS_STORE (persists independently of log)
+    // then write a plain log entry (isSavedMeal:false) so deleting from Today never
+    // touches the saved recipe.
+    var plants=collectPlants(),hasFerm=collectHasFermented(),wNova=collectWorstNova();
+    // Add/update in saved store — deduplicate by name, keep latest
+    SAVED_MEALS_STORE=SAVED_MEALS_STORE.filter(function(s){return s.savedMealName!==nameVal;});
+    SAVED_MEALS_STORE.push({
+      savedMealName:nameVal,
+      name:nameVal,
+      score:score,
+      plants:plants,
+      hasFermented:hasFerm,
+      worstNova:wNova,
+      ingredients:ingredients
+    });
+    saveMealsStore();
+    // Log entry for today — not flagged as saved so delete only removes from log
+    var savedLogEntry={
+      name:nameVal,
+      score:score,
+      plants:plants,
+      hasFermented:hasFerm,
+      worstNova:wNova,
+      loggedAt:now,
+      isSavedMeal:false,
+      savedMealName:'',
+      ingredients:ingredients,
+      mealType:mealType,
+      userSavedOnLog:true,
+      loggedFromSaved:false
+    };
+    SESSION_LOG.push(savedLogEntry);
+    postToSheet(savedLogEntry);
+  } else {
+    // Individual items — one entry per ingredient, no pre-computed score
+    // Score is computed at render time grouped by mealType + day
+    ingredients.forEach(function(ing){
+      var indEntry={
+        name:ing.name,
+        score:null,            // computed at render time as part of the day's mealType group
+        plants:ing.isPlant?[ing.name]:[],
+        hasFermented:ing.isFermented,
+        worstNova:ing.nova,
+        loggedAt:now,
+        isSavedMeal:false,
+        savedMealName:'',
+        ingredients:[ing],
+        mealType:mealType,
+        isIndividualItem:true,
+        userSavedOnLog:false,
+        loggedFromSaved:false
+      };
+      SESSION_LOG.push(indEntry);
+      postToSheet(indEntry);
+    });
+  }
+
+  saveSession();
+  updateDashboard();updateTodayLog();updateScreen1();
+
+  // Reset form
+  document.getElementById('ingredient-list').innerHTML='';
+  document.getElementById('ing-search').value='';
+  document.getElementById('ing-search-results').style.display='none';
+  document.getElementById('meal-name').value='';
+  document.getElementById('meal-name-section').style.display='none';
+  document.getElementById('save-toggle').classList.add('off');
+  document.querySelectorAll('.meal-tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelector('.meal-tab').classList.add('active');
+  updateGlowPreview();
+
+  // Show result overlay — score shown is always the combined group score for this mealType today
+  var displayScore=getGroupScore(mealType,now);
+  var msgs={high:"This plate's glowing — plants, protein and healthy fats working together.",mid:"Solid meal — one more plant or colour and you're glowing.",low:"You've started your glow — try adding a veg or wholegrain next time."};
+  document.getElementById('ov-circle').style.background=glowBg(displayScore);
+  document.getElementById('ov-circle').textContent=glowEmoji(displayScore);
+  document.getElementById('ov-score').textContent=displayScore.toFixed(2);
+  document.getElementById('ov-label').textContent=glowLabel(displayScore);
+  document.getElementById('ov-label').style.color=glowCol(displayScore);
+  document.getElementById('ov-msg').textContent=displayScore>=0.75?msgs.high:displayScore>=0.46?msgs.mid:msgs.low;
+  document.getElementById('result-overlay').classList.add('show');
+  _loggingInProgress=false;
+}
+function closeOverlay(e){if(!e||e.target===document.getElementById('result-overlay'))document.getElementById('result-overlay').classList.remove('show');}
+
+/* ── SCANNER ── */
+var _codeReader=null;
+function startScanner(){
+  document.getElementById('scanner-modal').classList.add('show');
+  document.getElementById('scanner-status').textContent='Requesting camera...';
+  if(typeof ZXing==='undefined'){document.getElementById('scanner-status').textContent='Scanner library not loaded — try refreshing.';return;}
+  _codeReader=new ZXing.BrowserMultiFormatReader();
+  _codeReader.decodeFromConstraints({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}},'scanner-video',function(result,err){
+    if(result){
+      var code=result.getText();
+      if(!/^\d{8,14}$/.test(code)){document.getElementById('scanner-status').textContent='Still scanning — hold steady...';return;}
+      stopScanner();lookupBarcodeAsIngredient(code);
+    } else if(err&&!(err instanceof ZXing.NotFoundException)){
+      document.getElementById('scanner-status').textContent='Camera error — try again.';
+    } else {
+      document.getElementById('scanner-status').textContent='Hold barcode steady inside the frame...';
+    }
+  }).catch(function(e){document.getElementById('scanner-status').textContent=e.name==='NotAllowedError'?'Camera permission denied.':'Camera unavailable.';});
+}
+function stopScanner(){
+  if(_codeReader){_codeReader.reset();_codeReader=null;}
+  document.getElementById('scanner-modal').classList.remove('show');
+  document.getElementById('scanner-status').textContent='Initialising camera...';
+}
+function submitManualBarcode(){
+  var code=document.getElementById('manual-barcode').value.trim();if(!code)return;
+  document.getElementById('manual-barcode').value='';
+  stopScanner();lookupBarcodeAsIngredient(code);
+}
+
+async function lookupBarcodeAsIngredient(code){
+  document.getElementById('ing-search').value='Looking up barcode...';
+  document.getElementById('ing-search').disabled=true;
+  try{
+    var r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+code+'.json?fields=product_name,product_name_en,product_name_fr,abbreviated_product_name,brands,nova_group,nutriscore_grade,nutriments,categories_tags,lang');
+    var d=await r.json();
+    document.getElementById('ing-search').value='';document.getElementById('ing-search').disabled=false;
+    if(d.status===0||!d.product){showIngResults([{name:'Product not found ('+code+')',brand:'',nova:3,nutri:'',isPlant:false,isFermented:false,_source:'barcode',nutriData:{fiber:0,protein:0,satFat:0,sugar:0,isWholeGrain:false,colours:1}}]);return;}
+    var p=d.product;
+    var name=p.product_name||p.product_name_en||p.abbreviated_product_name||p['product_name_'+p.lang]||'';
+    if(!name){var keys=Object.keys(p).filter(function(k){return k.startsWith('product_name_')&&p[k];});if(keys.length)name=p[keys[0]];}
+    if(!name)name='Unknown product';
+    showIngResults([Object.assign(mapHit(Object.assign({},p,{product_name:name})),{_source:'barcode'})]);
+  }catch(e){
+    document.getElementById('ing-search').value='';document.getElementById('ing-search').disabled=false;
+    showIngResults([{name:'Lookup failed — check connection',brand:'',nova:3,nutri:'',isPlant:false,isFermented:false,_source:'barcode',nutriData:{fiber:0,protein:0,satFat:0,sugar:0,isWholeGrain:false,colours:1}}]);
+  }
+}
+
+/* ── TODAY LOG ── */
+var todayOffset=0;
+function changeDay(dir){var n=todayOffset+dir;if(n>0)return;todayOffset=n;updateTodayLog();}
+function formatDateLabel(o){if(o===0)return'Today';if(o===-1)return'Yesterday';var d=new Date();d.setDate(d.getDate()+o);return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});}
+function formatTime(date){return date.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
+function isSameDay(date,offset){var t=new Date();t.setDate(t.getDate()+offset);return date.getDate()===t.getDate()&&date.getMonth()===t.getMonth()&&date.getFullYear()===t.getFullYear();}
+
+function deleteMeal(idx){
+  SESSION_LOG.splice(idx,1);
+  saveSession();
+  updateDashboard();updateTodayLog();
+}
+
+function deleteGroup(indicesStr){
+  var indices=JSON.parse(indicesStr);
+  indices.slice().sort(function(a,b){return b-a;}).forEach(function(i){SESSION_LOG.splice(i,1);});
+  saveSession();
+  updateDashboard();updateTodayLog();updateScreen1();
+}
+
+function deleteGroupById(gid){
+  var indices=window._groupIndexMap&&window._groupIndexMap[gid];
+  if(!indices)return;
+  indices.slice().sort(function(a,b){return b-a;}).forEach(function(i){SESSION_LOG.splice(i,1);});
+  delete window._groupIndexMap[gid];
+  saveSession();
+  updateDashboard();updateTodayLog();updateScreen1();
+}
+
+function updateTodayLog(){
+  document.getElementById('today-date-label').textContent=formatDateLabel(todayOffset);
+  var nb=document.getElementById('next-day-btn');
+  nb.disabled=todayOffset>=0;nb.style.opacity=todayOffset>=0?'0.3':'1';nb.style.color=todayOffset>=0?'var(--hint)':'var(--orange)';
+
+  var allEntries=SESSION_LOG.map(function(m,i){return{m:m,i:i};})
+    .filter(function(x){return x.m.loggedAt&&isSameDay(x.m.loggedAt,todayOffset);});
+
+  var emptyEl=document.getElementById('today-empty'),listEl=document.getElementById('today-list');
+  if(!allEntries.length){emptyEl.style.display='';listEl.style.display='none';return;}
+  emptyEl.style.display='none';listEl.style.display='';
+
+  // Group entries by mealType, preserving first-appearance order
+  var mealTypeOrder=[],groups={};
+  allEntries.forEach(function(x){
+    var mt=x.m.mealType||'Meal';
+    if(!groups[mt]){groups[mt]=[];mealTypeOrder.push(mt);}
+    groups[mt].push(x);
+  });
+
+  // Meal type pill colours
+  var mealTypeStyle={
+    'Breakfast':{bg:'#FFF8E8',col:'#8A6000'},
+    'Lunch':    {bg:'#E8F4FF',col:'#005A8A'},
+    'Dinner':   {bg:'#F0EAF8',col:'#5A2D82'},
+    'Snack':    {bg:'#FFF0E8',col:'#8A3200'}
+  };
+
+  listEl.innerHTML=mealTypeOrder.map(function(mealType){
+    var entries=groups[mealType];
+
+    // Compute combined glow score for this mealType group on this day
+    var referenceDate=entries[0].m.loggedAt;
+    var allIngs=[];
+    entries.forEach(function(x){if(x.m.ingredients)allIngs=allIngs.concat(x.m.ingredients);});
+    var groupScore=calcGlowFromIngredients(allIngs);
+    var col=glowCol(groupScore),bg=glowBg(groupScore),emoji=glowEmoji(groupScore);
+
+    var mtStyle=mealTypeStyle[mealType]||{bg:'var(--cream)',col:'var(--muted)'};
+    var mealTypePill='<span style="background:'+mtStyle.bg+';color:'+mtStyle.col+';border-radius:99px;padding:2px 8px;font-size:10px;font-weight:600">'+mealType+'</span>';
+
+    // Plants & tags across the whole group
+    var allPlants=[],hasFerm=false,worstNova=1;
+    entries.forEach(function(x){
+      if(x.m.plants)allPlants=allPlants.concat(x.m.plants);
+      if(x.m.hasFermented)hasFerm=true;
+      if((x.m.worstNova||1)>worstNova)worstNova=x.m.worstNova||1;
+    });
+    var uniquePlants=allPlants.filter(function(v,i,a){return a.indexOf(v)===i;});
+    var groupTags='';
+    if(uniquePlants.length>0)groupTags+='<span class="plant-pill">'+uniquePlants.length+' plant'+(uniquePlants.length>1?'s':'')+'</span> ';
+    if(hasFerm)groupTags+='<span class="ferm-pill">Fermented</span> ';
+    if(worstNova>=4)groupTags+='<span class="nova-pill nova-4">NOVA 4</span>';
+
+    // First logged time in this group
+    var firstTime=formatTime(entries[0].m.loggedAt);
+
+    // Delete button — removes all entries in this group
+    var groupIndices=entries.map(function(x){return x.i;});
+    var _gid='grp-'+mealType.toLowerCase()+'-'+Date.now();
+    window._groupIndexMap=window._groupIndexMap||{};
+    window._groupIndexMap[_gid]=groupIndices;
+    var groupDeleteBtn='<button onclick="deleteGroupById(\''+_gid+'\',this)" title="Delete '+mealType+'"'
+      +' style="background:none;border:none;cursor:pointer;padding:3px;opacity:.45;flex-shrink:0;display:flex;align-items:center"'
+      +' onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'0.45\'">'
+      +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5">'
+      +'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>'
+      +'<path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>'
+      +'</svg>'
+      +'</button>';
+
+    // Build the item rows inside the group
+    var itemRows=entries.map(function(x){
+      var m=x.m,idx=x.i;
+      var itemName=m.name;
+      return'<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0 5px 8px;border-top:.5px solid var(--border)">'
+        +'<div style="font-size:12px;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+itemName+'</div>'
+        +'<button onclick="deleteMeal('+idx+')" title="Remove" style="background:none;border:none;cursor:pointer;padding:2px 4px;opacity:.4;flex-shrink:0">'
+          +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+        +'</button>'
+      +'</div>';
+    }).join('');
+
+    // Determine header display name
+    // Single named (non-individual) entry → show its name. Otherwise show mealType.
+    var namedEntries=entries.filter(function(x){return!x.m.isIndividualItem;});
+    var headerName=namedEntries.length===1&&entries.length===1?namedEntries[0].m.name:mealType;
+
+    return'<div style="margin:10px 0;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">'
+      // Group header
+      +'<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px">'
+        +'<div style="width:38px;height:38px;border-radius:50%;background:'+bg+';border:1.5px solid '+col+';flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px">'+emoji+'</div>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px">'
+            +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">'
+              +'<span style="font-size:13px;font-weight:600;color:var(--ink)">'+headerName+'</span>'
+              +mealTypePill
+            +'</div>'
+            +'<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+              +'<span style="font-size:11px;color:var(--hint)">'+firstTime+'</span>'
+              +groupDeleteBtn
+            +'</div>'
+          +'</div>'
+          +'<div style="font-size:11px;color:'+col+';font-weight:600;margin:3px 0">'
+            +(entries.length>1||namedEntries.length===0?'Combined score · ':'')
+            +groupScore.toFixed(2)+' · '+glowLabel(groupScore)
+          +'</div>'
+          +(groupTags?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px">'+groupTags+'</div>':'')
+        +'</div>'
+      +'</div>'
+      // Item rows — only show if there are multiple entries or it's individual items (not a single named meal)
+      +(entries.length>1||entries[0].m.isIndividualItem?itemRows:'')
+    +'</div>';
+  }).join('');
+}
+
+/* ── INIT ── */
+document.getElementById('dash-date-label').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+updateGlowPreview();
+updateDashboard();
+updateTodayLog();
+updateScreen1();
+checkNickname();
+</script>
+</body>
+</html>
