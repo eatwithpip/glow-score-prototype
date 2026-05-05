@@ -369,8 +369,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);min-height:100vh;d
 
 </div>
 
+<div style="text-align:center;padding:8px 0 0">
+  <button onclick="clearAllData()" style="background:none;border:none;color:var(--border);font-size:10px;font-family:'DM Sans',sans-serif;cursor:pointer;padding:6px 12px;letter-spacing:0.02em">
+    clear data
+  </button>
+</div>
+
 <div class="footer-note">
-  <strong>Text search</strong> uses mock data &nbsp;·&nbsp; <strong>Barcode scan</strong> uses Open Food Facts API &nbsp;·&nbsp; <strong>Session</strong> persists on refresh, clears on tab close
+  <strong>Text search</strong> uses mock data &nbsp;·&nbsp; <strong>Barcode scan</strong> uses Open Food Facts API &nbsp;·&nbsp; <strong>Data</strong> persists across sessions
 </div>
 
 <!-- SCANNER MODAL -->
@@ -416,13 +422,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);min-height:100vh;d
 var SHEET_URL = 'https://script.google.com/macros/s/AKfycbyGFzYUS1SQ9mA7X6CFIWi_M6tevhaQTQ80KX9IanUrOvOWjgU_GWk8IyVxiPrZVLC5/exec';
 
 /* ── NICKNAME ── */
-var TESTER_NICKNAME = sessionStorage.getItem('pip_nickname') || '';
+var TESTER_NICKNAME = localStorage.getItem('pip_nickname') || '';
 
 function saveNickname(){
   var val = document.getElementById('nickname-input').value.trim();
   if(!val){ document.getElementById('nickname-input').style.borderColor='#C0392B'; return; }
   TESTER_NICKNAME = val;
-  sessionStorage.setItem('pip_nickname', val);
+  localStorage.setItem('pip_nickname', val);
   document.getElementById('nickname-modal').classList.remove('show');
 }
 
@@ -466,7 +472,7 @@ function postToSheet(entry){
 /* ── SESSION STORAGE ── */
 var SESSION_LOG = (function(){
   try {
-    var raw = JSON.parse(sessionStorage.getItem('pip_session_log') || '[]');
+    var raw = JSON.parse(localStorage.getItem('pip_session_log') || '[]');
     raw.forEach(function(m){ if(m.loggedAt) m.loggedAt = new Date(m.loggedAt); });
     return raw;
   } catch(e){ return []; }
@@ -475,15 +481,15 @@ var SESSION_LOG = (function(){
 // Saved meals live in their own store, completely independent of SESSION_LOG.
 // Deleting a log entry never touches this store.
 var SAVED_MEALS_STORE = (function(){
-  try { return JSON.parse(sessionStorage.getItem('pip_saved_meals') || '[]'); }
+  try { return JSON.parse(localStorage.getItem('pip_saved_meals') || '[]'); }
   catch(e){ return []; }
 })();
 
 function saveSession(){
-  try { sessionStorage.setItem('pip_session_log', JSON.stringify(SESSION_LOG)); } catch(e){}
+  try { localStorage.setItem('pip_session_log', JSON.stringify(SESSION_LOG)); } catch(e){}
 }
 function saveMealsStore(){
-  try { sessionStorage.setItem('pip_saved_meals', JSON.stringify(SAVED_MEALS_STORE)); } catch(e){}
+  try { localStorage.setItem('pip_saved_meals', JSON.stringify(SAVED_MEALS_STORE)); } catch(e){}
 }
 
 /* ── MOCK DATA ── */
@@ -1450,6 +1456,19 @@ function updateTodayLog(){
       +(entries.length>1||entries[0].m.isIndividualItem?itemRows:'')
     +'</div>';
   }).join('');
+}
+
+/* ── CLEAR DATA ── */
+function clearAllData(){
+  if(!confirm('Clear all your logged data and nickname? This cannot be undone.'))return;
+  localStorage.removeItem('pip_session_log');
+  localStorage.removeItem('pip_saved_meals');
+  localStorage.removeItem('pip_nickname');
+  SESSION_LOG.length=0;
+  SAVED_MEALS_STORE.length=0;
+  TESTER_NICKNAME='';
+  updateDashboard();updateTodayLog();updateScreen1();
+  checkNickname();
 }
 
 /* ── INIT ── */
